@@ -1,0 +1,26 @@
+safe_mode: true
+
+dashboard:
+  port: 8080
+
+metrics:
+  port: 2112
+
+scheduler:
+  mode: "random"
+  attack_interval: "30s"
+  attack_duration: "10s"
+
+containers:
+  include: []
+  exclude:
+    - "postgres"
+    - "mysql"
+    - "redis"
+    - "mongodb"
+    - "prometheus"
+    - "grafana"
+    - "chaosguard"
+
+database:
+  path: "./chaosguard.db"
