@@ -7,6 +7,10 @@ import (
 	"time"
 
 	"chaosguard/internal/domain"
+	"chaosguard/pkg/metrics"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/testutil"
 )
 
 // Mock AttackManager
@@ -294,5 +298,67 @@ func TestRecoveryManager_TrackExperiment(t *testing.T) {
 
 	if tracked != nil {
 		t.Error("expected experiment to be removed from tracking after recovery")
+	}
+}
+
+func TestRecoveryManager_Recover_RecordsMetricsOnSuccess(t *testing.T) {
+	aMgr := newMockAttackManager()
+	eRepo := newMockExperimentRepo()
+	registry := metrics.NewTestRegistry(prometheus.NewRegistry())
+	chaosCollector := metrics.NewChaosCollector(registry)
+	rMgr := NewManagerWithMetrics(aMgr, eRepo, chaosCollector)
+
+	mockAtk := newMockAttack("pause")
+	aMgr.addAttack("pause", mockAtk)
+
+	exp := &domain.Experiment{
+		ID:                "exp-1",
+		TargetContainerID: "c1",
+		AttackType:        "pause",
+		Status:            domain.ExperimentStatusRunning,
+	}
+
+	if err := rMgr.Recover(context.Background(), exp); err != nil {
+		t.Fatalf("Recover failed: %v", err)
+	}
+
+	if got := testutil.ToFloat64(registry.RecoveriesExecuted); got != 1 {
+		t.Errorf("expected RecoveriesExecuted to be 1, got %v", got)
+	}
+	if got := testutil.ToFloat64(registry.RecoveriesFailed); got != 0 {
+		t.Errorf("expected RecoveriesFailed to be 0, got %v", got)
+	}
+	if got := testutil.ToFloat64(registry.ExperimentsRecovered); got != 1 {
+		t.Errorf("expected ExperimentsRecovered to be 1, got %v", got)
+	}
+}
+
+func TestRecoveryManager_Recover_RecordsMetricsOnFailure(t *testing.T) {
+	aMgr := newMockAttackManager()
+	eRepo := newMockExperimentRepo()
+	registry := metrics.NewTestRegistry(prometheus.NewRegistry())
+	chaosCollector := metrics.NewChaosCollector(registry)
+	rMgr := NewManagerWithMetrics(aMgr, eRepo, chaosCollector)
+
+	mockAtk := newMockAttack("pause")
+	mockAtk.recoverError = domain.ErrExperimentNotFound
+	aMgr.addAttack("pause", mockAtk)
+
+	exp := &domain.Experiment{
+		ID:                "exp-1",
+		TargetContainerID: "c1",
+		AttackType:        "pause",
+		Status:            domain.ExperimentStatusRunning,
+	}
+
+	if err := rMgr.Recover(context.Background(), exp); err == nil {
+		t.Fatal("expected Recover to fail")
+	}
+
+	if got := testutil.ToFloat64(registry.RecoveriesExecuted); got != 0 {
+		t.Errorf("expected RecoveriesExecuted to be 0, got %v", got)
+	}
+	if got := testutil.ToFloat64(registry.RecoveriesFailed); got != 1 {
+		t.Errorf("expected RecoveriesFailed to be 1, got %v", got)
 	}
 }

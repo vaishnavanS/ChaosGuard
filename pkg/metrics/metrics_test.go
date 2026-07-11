@@ -1,11 +1,15 @@
 package metrics
 
 import (
+	"context"
 	"sync"
 	"testing"
 	"time"
 
 	"chaosguard/internal/domain"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/testutil"
 )
 
 // Mock ContainerRepository for testing
@@ -64,11 +68,46 @@ func (m *mockContainerController) Inspect(id string) (*domain.Container, error) 
 }
 
 func TestCollector_StartStop(t *testing.T) {
-	t.Skip("Skipping collector tests - requires full Prometheus registry initialization")
+	registry := NewTestRegistry(prometheus.NewRegistry())
+	collector := NewCollector(registry, &mockContainerController{}, newMockContainerRepo(), 10*time.Millisecond)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	if err := collector.Start(ctx); err != nil {
+		t.Fatalf("failed to start collector: %v", err)
+	}
+	if !collector.IsRunning() {
+		t.Fatal("expected collector to be running")
+	}
+
+	if err := collector.Stop(); err != nil {
+		t.Fatalf("failed to stop collector: %v", err)
+	}
+	if collector.IsRunning() {
+		t.Fatal("expected collector to be stopped")
+	}
 }
 
 func TestCollector_Collect(t *testing.T) {
-	t.Skip("Skipping collector tests - requires full Prometheus registry initialization")
+	registry := NewTestRegistry(prometheus.NewRegistry())
+	repo := newMockContainerRepo()
+	repo.addContainer(&domain.Container{ID: "c1", Status: "running"})
+	repo.addContainer(&domain.Container{ID: "c2", Status: "paused"})
+	repo.addContainer(&domain.Container{ID: "c3", Status: "exited"})
+
+	collector := NewCollector(registry, &mockContainerController{}, repo, time.Second)
+	collector.collect(context.Background())
+
+	if got := testutil.ToFloat64(registry.ContainersRunning); got != 1 {
+		t.Errorf("expected 1 running container, got %v", got)
+	}
+	if got := testutil.ToFloat64(registry.ContainersPaused); got != 1 {
+		t.Errorf("expected 1 paused container, got %v", got)
+	}
+	if got := testutil.ToFloat64(registry.ContainersStopped); got != 1 {
+		t.Errorf("expected 1 stopped container, got %v", got)
+	}
 }
 
 func TestChaosCollector_ExperimentLifecycle(t *testing.T) {
