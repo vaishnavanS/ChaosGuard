@@ -22,4 +22,5 @@ type AttackManager interface {
 type RecoveryManager interface {
 	Recover(ctx context.Context, experiment *Experiment) error
 	RecoverAllActive(ctx context.Context) error
+	TrackExperiment(experiment *Experiment)
 }

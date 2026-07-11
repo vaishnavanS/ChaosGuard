@@ -51,7 +51,17 @@ func NewRegistry() *Registry {
 		return globalRegistry
 	}
 
-	globalRegistry = &Registry{
+	globalRegistry = newRegistryWithRegisterer(prometheus.DefaultRegisterer)
+	return globalRegistry
+}
+
+// NewTestRegistry creates a new metrics registry for testing with a custom registerer
+func NewTestRegistry(registerer prometheus.Registerer) *Registry {
+	return newRegistryWithRegisterer(registerer)
+}
+
+func newRegistryWithRegisterer(registerer prometheus.Registerer) *Registry {
+	reg := &Registry{
 		// Docker metrics (per container)
 		ContainerCPUUsage: prometheus.NewGauge(prometheus.GaugeOpts{
 			Namespace: namespace,
@@ -194,29 +204,29 @@ func NewRegistry() *Registry {
 	}
 
 	// Register all metrics
-	prometheus.MustRegister(
-		globalRegistry.ContainerCPUUsage,
-		globalRegistry.ContainerMemoryUsage,
-		globalRegistry.ContainerNetworkIn,
-		globalRegistry.ContainerNetworkOut,
-		globalRegistry.ContainersRunning,
-		globalRegistry.ContainersPaused,
-		globalRegistry.ContainersStopped,
-		globalRegistry.ExperimentsTotal,
-		globalRegistry.ExperimentsRunning,
-		globalRegistry.ExperimentsCompleted,
-		globalRegistry.ExperimentsFailed,
-		globalRegistry.ExperimentsRecovered,
-		globalRegistry.ExperimentDurationMs,
-		globalRegistry.AttacksExecuted,
-		globalRegistry.AttacksFailed,
-		globalRegistry.RecoveriesExecuted,
-		globalRegistry.RecoveriesFailed,
-		globalRegistry.SchedulerRunning,
-		globalRegistry.LastExperimentAt,
+	registerer.MustRegister(
+		reg.ContainerCPUUsage,
+		reg.ContainerMemoryUsage,
+		reg.ContainerNetworkIn,
+		reg.ContainerNetworkOut,
+		reg.ContainersRunning,
+		reg.ContainersPaused,
+		reg.ContainersStopped,
+		reg.ExperimentsTotal,
+		reg.ExperimentsRunning,
+		reg.ExperimentsCompleted,
+		reg.ExperimentsFailed,
+		reg.ExperimentsRecovered,
+		reg.ExperimentDurationMs,
+		reg.AttacksExecuted,
+		reg.AttacksFailed,
+		reg.RecoveriesExecuted,
+		reg.RecoveriesFailed,
+		reg.SchedulerRunning,
+		reg.LastExperimentAt,
 	)
 
-	return globalRegistry
+	return reg
 }
 
 // ResetRegistry clears the global registry (mainly for testing)

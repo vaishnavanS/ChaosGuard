@@ -11,18 +11,21 @@ import (
 	"chaosguard/internal/domain"
 	"chaosguard/pkg/config"
 	"chaosguard/pkg/logger"
+	"chaosguard/pkg/metrics"
 
 	"github.com/google/uuid"
 )
 
 // Scheduler coordinates chaos experiments based on scheduling rules and safe mode.
 type Scheduler struct {
-	cfg            *config.Config
-	containerCli   domain.ContainerController
-	containerRepo  domain.ContainerRepository
-	experimentRepo domain.ExperimentRepository
-	attackMgr      domain.AttackManager
-	recoveryMgr    domain.RecoveryManager
+	cfg              *config.Config
+	containerCli     domain.ContainerController
+	containerRepo    domain.ContainerRepository
+	experimentRepo   domain.ExperimentRepository
+	attackMgr        domain.AttackManager
+	recoveryMgr      domain.RecoveryManager
+	chaosCollector   *metrics.ChaosCollector
+	containerMetrics *metrics.Collector
 
 	// State management
 	running  bool
@@ -53,6 +56,23 @@ func NewScheduler(
 	}
 }
 
+// NewSchedulerWithMetrics creates a Scheduler with metrics collector integration.
+func NewSchedulerWithMetrics(
+	cfg *config.Config,
+	containerCli domain.ContainerController,
+	containerRepo domain.ContainerRepository,
+	experimentRepo domain.ExperimentRepository,
+	attackMgr domain.AttackManager,
+	recoveryMgr domain.RecoveryManager,
+	chaosCollector *metrics.ChaosCollector,
+	containerMetrics *metrics.Collector,
+) *Scheduler {
+	s := NewScheduler(cfg, containerCli, containerRepo, experimentRepo, attackMgr, recoveryMgr)
+	s.chaosCollector = chaosCollector
+	s.containerMetrics = containerMetrics
+	return s
+}
+
 // Start runs the scheduler polling loop in the background.
 func (s *Scheduler) Start(ctx context.Context) error {
 	s.mu.Lock()
@@ -67,6 +87,16 @@ func (s *Scheduler) Start(ctx context.Context) error {
 	interval, err := time.ParseDuration(s.cfg.Scheduler.AttackInterval)
 	if err != nil {
 		return fmt.Errorf("invalid scheduler interval: %w", err)
+	}
+
+	if s.containerMetrics != nil {
+		if err := s.containerMetrics.Start(ctx); err != nil {
+			logger.Error(err, "Failed to start container metrics collector")
+		}
+	}
+
+	if s.chaosCollector != nil {
+		s.chaosCollector.RecordSchedulerStatusChange(true)
 	}
 
 	logger.Info("Starting Scheduler in mode '%s' with interval %s", s.cfg.Scheduler.Mode, interval)
@@ -86,6 +116,17 @@ func (s *Scheduler) Stop() error {
 
 	s.running = false
 	close(s.stopChan)
+
+	if s.containerMetrics != nil {
+		if err := s.containerMetrics.Stop(); err != nil {
+			logger.Error(err, "Failed to stop container metrics collector")
+		}
+	}
+
+	if s.chaosCollector != nil {
+		s.chaosCollector.RecordSchedulerStatusChange(false)
+	}
+
 	logger.Info("Scheduler stopped successfully")
 	return nil
 }
@@ -199,6 +240,15 @@ func (s *Scheduler) injectChaos() {
 	if err := s.experimentRepo.Save(exp); err != nil {
 		logger.Error(err, "Failed to create experiment record: %v", err)
 		return
+	}
+
+	if s.recoveryMgr != nil {
+		s.recoveryMgr.TrackExperiment(exp)
+	}
+
+	if s.chaosCollector != nil {
+		s.chaosCollector.RecordExperimentStarted(exp.ID)
+		s.chaosCollector.RecordLastExperimentTime()
 	}
 
 	logger.Info("Scheduler selected container '%s' (ID: %s) for attack '%s'", target.Name, target.ID, attackType)

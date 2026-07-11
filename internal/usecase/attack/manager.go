@@ -8,13 +8,15 @@ import (
 
 	"chaosguard/internal/domain"
 	"chaosguard/pkg/logger"
+	"chaosguard/pkg/metrics"
 )
 
 // Manager implements domain.AttackManager to register and execute chaos attacks.
 type Manager struct {
-	mu             sync.RWMutex
-	attacks        map[string]domain.Attack
-	experimentRepo domain.ExperimentRepository
+	mu               sync.RWMutex
+	attacks          map[string]domain.Attack
+	experimentRepo   domain.ExperimentRepository
+	chaosCollector   *metrics.ChaosCollector
 }
 
 // NewManager creates a new Manager instance.
@@ -23,6 +25,13 @@ func NewManager(experimentRepo domain.ExperimentRepository) *Manager {
 		attacks:        make(map[string]domain.Attack),
 		experimentRepo: experimentRepo,
 	}
+}
+
+// NewManagerWithMetrics creates a new Manager instance with metrics support.
+func NewManagerWithMetrics(experimentRepo domain.ExperimentRepository, chaosCollector *metrics.ChaosCollector) *Manager {
+	m := NewManager(experimentRepo)
+	m.chaosCollector = chaosCollector
+	return m
 }
 
 // Register adds a new attack plugin to the manager.
@@ -75,6 +84,10 @@ func (m *Manager) Execute(ctx context.Context, exp *domain.Experiment) error {
 		logger.Error(err, "Attack injection failed for container %s", exp.TargetContainerID)
 		endedAt := time.Now()
 		m.experimentRepo.UpdateStatus(exp.ID, domain.ExperimentStatusFailed, err.Error(), &endedAt)
+		if m.chaosCollector != nil {
+			m.chaosCollector.RecordAttackFailed()
+			m.chaosCollector.RecordExperimentFailed(exp.ID)
+		}
 		return err
 	}
 
@@ -91,7 +104,15 @@ func (m *Manager) Execute(ctx context.Context, exp *domain.Experiment) error {
 		}
 		endedAt := time.Now()
 		m.experimentRepo.UpdateStatus(exp.ID, domain.ExperimentStatusFailed, msg, &endedAt)
+		if m.chaosCollector != nil {
+			m.chaosCollector.RecordAttackFailed()
+			m.chaosCollector.RecordExperimentFailed(exp.ID)
+		}
 		return fmt.Errorf("%s", msg)
+	}
+
+	if m.chaosCollector != nil {
+		m.chaosCollector.RecordAttackExecuted()
 	}
 
 	logger.Info("Attack '%s' successfully injected and validated for container %s", exp.AttackType, exp.TargetContainerID)

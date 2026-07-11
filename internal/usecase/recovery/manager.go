@@ -8,6 +8,7 @@ import (
 
 	"chaosguard/internal/domain"
 	"chaosguard/pkg/logger"
+	"chaosguard/pkg/metrics"
 )
 
 // Manager implements domain.RecoveryManager to handle container restoration.
@@ -15,6 +16,7 @@ type Manager struct {
 	mu             sync.RWMutex
 	attackMgr      domain.AttackManager
 	experimentRepo domain.ExperimentRepository
+	chaosCollector *metrics.ChaosCollector
 	active         map[string]*domain.Experiment // Track active experiments for recovery
 }
 
@@ -28,6 +30,17 @@ func NewManager(
 		experimentRepo: experimentRepo,
 		active:         make(map[string]*domain.Experiment),
 	}
+}
+
+// NewManagerWithMetrics creates a new Recovery Manager instance with metrics support.
+func NewManagerWithMetrics(
+	attackMgr domain.AttackManager,
+	experimentRepo domain.ExperimentRepository,
+	chaosCollector *metrics.ChaosCollector,
+) *Manager {
+	m := NewManager(attackMgr, experimentRepo)
+	m.chaosCollector = chaosCollector
+	return m
 }
 
 // Recover restores a container affected by a chaos experiment.
@@ -52,6 +65,9 @@ func (m *Manager) Recover(ctx context.Context, experiment *domain.Experiment) er
 		msg := fmt.Sprintf("recovery failed for experiment %s: %v", experiment.ID, err)
 		logger.Error(nil, "%s", msg)
 		m.experimentRepo.UpdateStatus(experiment.ID, domain.ExperimentStatusFailed, msg, nil)
+		if m.chaosCollector != nil {
+			m.chaosCollector.RecordRecoveryFailed()
+		}
 		return fmt.Errorf("%s", msg)
 	}
 
@@ -60,6 +76,11 @@ func (m *Manager) Recover(ctx context.Context, experiment *domain.Experiment) er
 	if err := m.experimentRepo.UpdateStatus(experiment.ID, domain.ExperimentStatusRecovered, "", &endedAt); err != nil {
 		logger.Error(err, "Failed to update experiment %s status to recovered", experiment.ID)
 		return err
+	}
+
+	if m.chaosCollector != nil {
+		m.chaosCollector.RecordRecoveryExecuted()
+		m.chaosCollector.RecordExperimentRecovered(experiment.ID)
 	}
 
 	logger.Info("Recovery completed successfully for experiment %s", experiment.ID)

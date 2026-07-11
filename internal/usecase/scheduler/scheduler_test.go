@@ -9,6 +9,9 @@ import (
 
 	"chaosguard/internal/domain"
 	"chaosguard/pkg/config"
+	"chaosguard/pkg/metrics"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 // Mock ContainerRepository
@@ -161,6 +164,9 @@ func (m *mockRecoveryManager) Recover(ctx context.Context, experiment *domain.Ex
 func (m *mockRecoveryManager) RecoverAllActive(ctx context.Context) error {
 	return nil
 }
+func (m *mockRecoveryManager) TrackExperiment(experiment *domain.Experiment) {
+	// No-op for scheduler test; tracking is verified in recovery manager tests.
+}
 
 func TestScheduler_StartStop(t *testing.T) {
 	cfg := config.DefaultConfig()
@@ -254,6 +260,24 @@ func TestScheduler_SelectionModes(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestScheduler_InitializesMetricsCollectors(t *testing.T) {
+	cfg := config.DefaultConfig()
+
+	registry := metrics.NewTestRegistry(prometheus.NewRegistry())
+	chaosCollector := metrics.NewChaosCollector(registry)
+	containerCollector := metrics.NewCollector(registry, &mockContainerController{}, newMockContainerRepo(), 100*time.Millisecond)
+
+	s := NewSchedulerWithMetrics(cfg, &mockContainerController{}, newMockContainerRepo(), newMockExperimentRepo(), &mockAttackManager{}, &mockRecoveryManager{}, chaosCollector, containerCollector)
+
+	if s.containerMetrics == nil {
+		t.Fatal("expected container metrics collector to be initialized")
+	}
+
+	if s.chaosCollector == nil {
+		t.Fatal("expected chaos metrics collector to be initialized")
 	}
 }
 
