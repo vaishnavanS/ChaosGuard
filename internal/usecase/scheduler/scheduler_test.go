@@ -51,10 +51,29 @@ func (r *mockContainerRepo) Save(c *domain.Container) error {
 	return nil
 }
 
+func (r *mockContainerRepo) Create(c *domain.Container) error {
+	return r.Save(c)
+}
+
+func (r *mockContainerRepo) Update(c *domain.Container) error {
+	return r.Save(c)
+}
+
 func (r *mockContainerRepo) Delete(id string) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	delete(r.data, id)
+	return nil
+}
+
+func (r *mockContainerRepo) UpdateState(id string, state string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	c, ok := r.data[id]
+	if !ok {
+		return errors.New("not found")
+	}
+	c.Status = state
 	return nil
 }
 
@@ -92,6 +111,21 @@ func (r *mockExperimentRepo) Save(e *domain.Experiment) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.data[e.ID] = e
+	return nil
+}
+
+func (r *mockExperimentRepo) Create(e *domain.Experiment) error {
+	return r.Save(e)
+}
+
+func (r *mockExperimentRepo) Update(e *domain.Experiment) error {
+	return r.Save(e)
+}
+
+func (r *mockExperimentRepo) Delete(id string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	delete(r.data, id)
 	return nil
 }
 

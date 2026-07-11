@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 
+	"chaosguard/internal/infra/sqlite"
 	"chaosguard/pkg/config"
 	"chaosguard/pkg/logger"
 
@@ -13,6 +14,7 @@ var (
 	cfgFile      string
 	verbose      bool
 	ActiveConfig *config.Config
+	ActiveStore  *sqlite.Store
 )
 
 // RootCmd represents the base command when called without any subcommands
@@ -42,6 +44,15 @@ analysis through a modern local dashboard.`,
 		}
 
 		logger.Debug("Configuration loaded successfully: %+v", ActiveConfig)
+
+		logger.Info("Initializing SQLite persistence store at %s", ActiveConfig.Database.Path)
+		store, err := sqlite.NewStore(ActiveConfig.Database.Path)
+		if err != nil {
+			logger.Error(err, "Failed to initialize persistence store")
+			return err
+		}
+		ActiveStore = store
+
 		return nil
 	},
 }

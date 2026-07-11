@@ -18,7 +18,10 @@ type ContainerRepository interface {
 	Get(id string) (*Container, error)
 	List() ([]*Container, error)
 	Save(container *Container) error
+	Create(container *Container) error
+	Update(container *Container) error
 	Delete(id string) error
+	UpdateState(id string, state string) error
 }
 
 // ContainerController defines runtime operations to control and inspect Docker containers.

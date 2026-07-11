@@ -111,6 +111,18 @@ func (r *mockExperimentRepo) Save(e *domain.Experiment) error {
 	return nil
 }
 
+func (r *mockExperimentRepo) Create(e *domain.Experiment) error {
+	return nil
+}
+
+func (r *mockExperimentRepo) Update(e *domain.Experiment) error {
+	return nil
+}
+
+func (r *mockExperimentRepo) Delete(id string) error {
+	return nil
+}
+
 func (r *mockExperimentRepo) UpdateStatus(id string, status string, errStr string, endedAt *time.Time) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()

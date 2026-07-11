@@ -11,12 +11,12 @@ import (
 
 // Mock ContainerController
 type mockContainerController struct {
-	mu              sync.Mutex
-	status          string
-	called          map[string]bool
-	inspectError    error
-	actionError     error
-	noStatusUpdate  bool // When true, actions don't update status (simulates injection failure)
+	mu             sync.Mutex
+	status         string
+	called         map[string]bool
+	inspectError   error
+	actionError    error
+	noStatusUpdate bool // When true, actions don't update status (simulates injection failure)
 }
 
 func newMockContainerController(initialStatus string) *mockContainerController {
@@ -140,6 +140,18 @@ func (r *mockExperimentRepo) Save(e *domain.Experiment) error {
 	return nil
 }
 
+func (r *mockExperimentRepo) Create(e *domain.Experiment) error {
+	return r.Save(e)
+}
+
+func (r *mockExperimentRepo) Update(e *domain.Experiment) error {
+	return r.Save(e)
+}
+
+func (r *mockExperimentRepo) Delete(id string) error {
+	return nil
+}
+
 func (r *mockExperimentRepo) UpdateStatus(id string, status string, errStr string, endedAt *time.Time) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -223,7 +235,7 @@ func TestAttackManager_Execute_ValidationFailure(t *testing.T) {
 	// Create a controller that simulates injection failure (Pause succeeds but doesn't change status)
 	controller := newMockContainerController("running")
 	controller.noStatusUpdate = true // Simulate failed injection
-	
+
 	pauseAttack := NewPauseAttack(controller)
 	mgr.Register(pauseAttack)
 
@@ -252,11 +264,11 @@ func TestConcreteAttacks(t *testing.T) {
 	controller := newMockContainerController("running")
 
 	attacks := []struct {
-		attack       domain.Attack
-		runCall      string
-		recoverCall  string
-		expectedRun  string
-		expectedRec  string
+		attack      domain.Attack
+		runCall     string
+		recoverCall string
+		expectedRun string
+		expectedRec string
 	}{
 		{NewPauseAttack(controller), "Pause", "Unpause", "paused", "running"},
 		{NewStopAttack(controller), "Stop", "Start", "exited", "running"},

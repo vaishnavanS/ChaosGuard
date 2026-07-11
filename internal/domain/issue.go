@@ -16,7 +16,9 @@ type Issue struct {
 	ExperimentID string    `json:"experiment_id"` // Associated experiment UUID (optional)
 	RuleName     string    `json:"rule_name"`     // Triggered rule name (e.g. crash_loop, backend_instability)
 	Severity     string    `json:"severity"`      // Severity level
-	Description  string    `json:"description"`   // Human-readable details
+	Category     string    `json:"category,omitempty"`
+	Title        string    `json:"title,omitempty"`
+	Description  string    `json:"description"` // Human-readable details
 	DetectedAt   time.Time `json:"detected_at"`
 }
 
@@ -26,5 +28,6 @@ type IssueRepository interface {
 	List() ([]*Issue, error)
 	ListByExperiment(experimentID string) ([]*Issue, error)
 	Save(issue *Issue) error
+	Create(issue *Issue) error
 	Delete(id string) error
 }

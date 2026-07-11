@@ -40,7 +40,19 @@ func (m *mockContainerRepo) Save(c *domain.Container) error {
 	return nil
 }
 
+func (m *mockContainerRepo) Create(c *domain.Container) error {
+	return nil
+}
+
+func (m *mockContainerRepo) Update(c *domain.Container) error {
+	return nil
+}
+
 func (m *mockContainerRepo) Delete(id string) error {
+	return nil
+}
+
+func (m *mockContainerRepo) UpdateState(id string, state string) error {
 	return nil
 }
 
@@ -57,12 +69,12 @@ func (m *mockContainerController) Discover() ([]*domain.Container, error) {
 	return nil, nil
 }
 
-func (m *mockContainerController) Pause(id string) error { return nil }
+func (m *mockContainerController) Pause(id string) error   { return nil }
 func (m *mockContainerController) Unpause(id string) error { return nil }
-func (m *mockContainerController) Stop(id string) error { return nil }
-func (m *mockContainerController) Start(id string) error { return nil }
+func (m *mockContainerController) Stop(id string) error    { return nil }
+func (m *mockContainerController) Start(id string) error   { return nil }
 func (m *mockContainerController) Restart(id string) error { return nil }
-func (m *mockContainerController) Kill(id string) error { return nil }
+func (m *mockContainerController) Kill(id string) error    { return nil }
 func (m *mockContainerController) Inspect(id string) (*domain.Container, error) {
 	return nil, nil
 }
