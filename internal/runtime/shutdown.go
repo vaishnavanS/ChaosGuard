@@ -107,7 +107,5 @@ func recoverPausedContainers(ctx context.Context, controller domain.ContainerCon
 }
 
 func flushLogger() {
-	if f, ok := os.Stdout.(*os.File); ok {
-		_ = f.Sync()
-	}
+	_ = os.Stdout.Sync()
 }

@@ -33,6 +33,7 @@ type Scheduler struct {
 	mu       sync.Mutex
 	rrIndex  int
 	randGen  *rand.Rand
+	wg       sync.WaitGroup
 }
 
 // NewScheduler creates a new Scheduler instance.
@@ -136,6 +137,22 @@ func (s *Scheduler) IsRunning() bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.running
+}
+
+// WaitForActive waits for all running chaos experiments to finish or until context cancellation.
+func (s *Scheduler) WaitForActive(ctx context.Context) error {
+	c := make(chan struct{})
+	go func() {
+		s.wg.Wait()
+		close(c)
+	}()
+
+	select {
+	case <-c:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 }
 
 func (s *Scheduler) loop(ctx context.Context, interval time.Duration) {
@@ -254,7 +271,9 @@ func (s *Scheduler) injectChaos() {
 	logger.Info("Scheduler selected container '%s' (ID: %s) for attack '%s'", target.Name, target.ID, attackType)
 
 	// Async run attack
+	s.wg.Add(1)
 	go func() {
+		defer s.wg.Done()
 		ctx, cancel := context.WithTimeout(context.Background(), duration+10*time.Second)
 		defer cancel()
 
