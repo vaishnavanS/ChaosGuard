@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"chaosguard/internal/api"
+	"chaosguard/internal/api/handlers"
 	"chaosguard/internal/infra/docker"
 	"chaosguard/internal/infra/sqlite"
 	"chaosguard/internal/usecase/attack"
@@ -50,6 +52,7 @@ type Dependencies struct {
 	ChaosCollector     *metrics.ChaosCollector
 	ContainerCollector *metrics.Collector
 	MetricsServer      *server.MetricsServer
+	APIServer          *api.Server
 }
 
 // ValidatePrerequisites verifies that required external services are reachable before startup.
@@ -110,6 +113,24 @@ func Bootstrap(opts Options) (*App, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// Create decoupled lifecycle wrapper to prevent circular import
+	lifecycleWrapper := &apiLifecycleWrapper{lifecycle: lifecycle}
+
+	// Create API Handler
+	apiHandler := handlers.NewHandler(
+		cfg,
+		deps.Store.ContainerRepo,
+		deps.DockerController,
+		deps.Store.ExperimentRepo,
+		deps.AttackManager,
+		deps.RecoveryManager,
+		deps.Scheduler,
+		lifecycleWrapper,
+		"v0.1.0-dev",
+	)
+
+	deps.APIServer = api.NewServer(cfg.Dashboard.Port, apiHandler)
 
 	return &App{
 		deps:      deps,
@@ -209,4 +230,12 @@ func checkPortAvailable(port int) error {
 		return err
 	}
 	return ln.Close()
+}
+
+type apiLifecycleWrapper struct {
+	lifecycle *Lifecycle
+}
+
+func (w *apiLifecycleWrapper) GetState() string {
+	return w.lifecycle.State().String()
 }

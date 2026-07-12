@@ -1,0 +1,383 @@
+basePath: /
+definitions:
+  requests.CreateExperimentRequest:
+    properties:
+      attack_type:
+        example: pause
+        type: string
+      duration:
+        example: 10
+        minimum: 1
+        type: integer
+      target_container_id:
+        example: c1
+        type: string
+    required:
+    - attack_type
+    - duration
+    - target_container_id
+    type: object
+  responses.ContainerResponse:
+    properties:
+      created_at:
+        example: "2026-07-12T16:00:00Z"
+        type: string
+      id:
+        example: c1
+        type: string
+      image:
+        example: nginx:latest
+        type: string
+      is_monitored:
+        example: true
+        type: boolean
+      labels:
+        additionalProperties:
+          type: string
+        type: object
+      name:
+        example: web
+        type: string
+      status:
+        example: running
+        type: string
+      updated_at:
+        example: "2026-07-12T16:05:00Z"
+        type: string
+      uptime:
+        example: 2h45m10s
+        type: string
+    type: object
+  responses.ErrorResponse:
+    properties:
+      error:
+        example: error message
+        type: string
+      success:
+        example: false
+        type: boolean
+    type: object
+  responses.ExperimentResponse:
+    properties:
+      attack_type:
+        example: pause
+        type: string
+      container_name:
+        example: web
+        type: string
+      duration:
+        example: 10
+        type: integer
+      ended_at:
+        example: "2026-07-12T16:10:10Z"
+        type: string
+      error_message:
+        example: attack failed
+        type: string
+      id:
+        example: uuid-string
+        type: string
+      parameters:
+        example: '{"duration":"10s"}'
+        type: string
+      recovery_status:
+        example: recovered
+        type: string
+      started_at:
+        example: "2026-07-12T16:10:00Z"
+        type: string
+      status:
+        example: completed
+        type: string
+      target_container_id:
+        example: c1
+        type: string
+    type: object
+  responses.HealthResponse:
+    properties:
+      state:
+        example: running
+        type: string
+      status:
+        example: healthy
+        type: string
+      version:
+        example: v0.1.0-dev
+        type: string
+    type: object
+  responses.RuntimeResponse:
+    properties:
+      state:
+        example: running
+        type: string
+    type: object
+  responses.SchedulerStatusResponse:
+    properties:
+      attack_duration:
+        example: 10s
+        type: string
+      attack_interval:
+        example: 30s
+        type: string
+      mode:
+        example: random
+        type: string
+      running:
+        example: true
+        type: boolean
+    type: object
+  responses.SuccessResponse:
+    properties:
+      data: {}
+      success:
+        example: true
+        type: boolean
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: ChaosGuard Automated Chaos Engineering Platform API
+  title: ChaosGuard API
+  version: "1.0"
+paths:
+  /containers:
+    get:
+      description: Returns a list of target containers and their monitoring status
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/responses.SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/responses.ContainerResponse'
+                  type: array
+              type: object
+      summary: List Containers
+      tags:
+      - Containers
+  /containers/{id}:
+    get:
+      description: Returns details for a single target container
+      parameters:
+      - description: Container ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/responses.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/responses.ContainerResponse'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/responses.ErrorResponse'
+      summary: Get Container
+      tags:
+      - Containers
+  /experiments:
+    get:
+      description: Returns a list of chaos experiments executed or scheduled
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/responses.SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/responses.ExperimentResponse'
+                  type: array
+              type: object
+      summary: List Experiments
+      tags:
+      - Experiments
+    post:
+      consumes:
+      - application/json
+      description: Starts a manual/ad-hoc chaos attack against a container
+      parameters:
+      - description: Attack Details
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/requests.CreateExperimentRequest'
+      produces:
+      - application/json
+      responses:
+        "211":
+          description: ""
+          schema:
+            allOf:
+            - $ref: '#/definitions/responses.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/responses.ExperimentResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/responses.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/responses.ErrorResponse'
+      summary: Inject Failure
+      tags:
+      - Experiments
+  /experiments/{id}:
+    delete:
+      description: Stops a running experiment early and deletes its history record
+      parameters:
+      - description: Experiment ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/responses.SuccessResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/responses.ErrorResponse'
+      summary: Cancel Experiment
+      tags:
+      - Experiments
+    get:
+      description: Returns details for a single chaos experiment
+      parameters:
+      - description: Experiment ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/responses.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/responses.ExperimentResponse'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/responses.ErrorResponse'
+      summary: Get Experiment
+      tags:
+      - Experiments
+  /health:
+    get:
+      description: Returns the application health status and runtime state
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/responses.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/responses.HealthResponse'
+              type: object
+      summary: Get Health status
+      tags:
+      - Health
+  /runtime:
+    get:
+      description: Returns the lifecycle state of the ChaosGuard daemon
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/responses.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/responses.RuntimeResponse'
+              type: object
+      summary: Get Runtime State
+      tags:
+      - Runtime
+  /scheduler/start:
+    post:
+      description: Resumes the background chaos failure injection loop
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/responses.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/responses.ErrorResponse'
+      summary: Start Scheduler
+      tags:
+      - Scheduler
+  /scheduler/status:
+    get:
+      description: Returns the status and scheduling settings of the automated scheduler
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/responses.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/responses.SchedulerStatusResponse'
+              type: object
+      summary: Get Scheduler Status
+      tags:
+      - Scheduler
+  /scheduler/stop:
+    post:
+      description: Pauses the automated scheduler loop
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/responses.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/responses.ErrorResponse'
+      summary: Stop Scheduler
+      tags:
+      - Scheduler
+swagger: "2.0"

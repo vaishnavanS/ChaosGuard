@@ -53,6 +53,13 @@ func (a *App) Shutdown(ctx context.Context) error {
 		logger.Error(err, "Failed to recover paused containers")
 	}
 
+	if a.deps.APIServer.IsRunning() {
+		logger.Info("Stopping REST API server")
+		if err := a.deps.APIServer.Stop(shutdownCtx); err != nil {
+			logger.Error(err, "Failed to stop REST API server")
+		}
+	}
+
 	if a.deps.MetricsServer.IsRunning() {
 		logger.Info("Stopping metrics server")
 		if err := a.deps.MetricsServer.Stop(shutdownCtx); err != nil {

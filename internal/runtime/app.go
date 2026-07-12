@@ -38,6 +38,12 @@ func (a *App) Run() error {
 		return err
 	}
 
+	logger.Info("Starting REST API server on port %d", a.deps.Config.Dashboard.Port)
+	if err := a.deps.APIServer.Start(a.runCtx); err != nil {
+		_ = a.Shutdown(context.Background())
+		return err
+	}
+
 	logger.Info("Starting scheduler")
 	if err := a.deps.Scheduler.Start(a.runCtx); err != nil {
 		_ = a.Shutdown(context.Background())
