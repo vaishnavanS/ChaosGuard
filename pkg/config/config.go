@@ -17,12 +17,12 @@ const DefaultConfigName = "chaosguard.yaml"
 
 // Config holds all configuration parameters for ChaosGuard
 type Config struct {
-	SafeMode   bool             `mapstructure:"safe_mode" json:"safe_mode" yaml:"safe_mode"`
-	Dashboard  DashboardConfig  `mapstructure:"dashboard" json:"dashboard" yaml:"dashboard"`
-	Metrics    MetricsConfig    `mapstructure:"metrics" json:"metrics" yaml:"metrics"`
-	Scheduler  SchedulerConfig  `mapstructure:"scheduler" json:"scheduler" yaml:"scheduler"`
-	Containers ContainerFilter  `mapstructure:"containers" json:"containers" yaml:"containers"`
-	Database   DatabaseConfig   `mapstructure:"database" json:"database" yaml:"database"`
+	SafeMode   bool            `mapstructure:"safe_mode" json:"safe_mode" yaml:"safe_mode"`
+	Dashboard  DashboardConfig `mapstructure:"dashboard" json:"dashboard" yaml:"dashboard"`
+	Metrics    MetricsConfig   `mapstructure:"metrics" json:"metrics" yaml:"metrics"`
+	Scheduler  SchedulerConfig `mapstructure:"scheduler" json:"scheduler" yaml:"scheduler"`
+	Containers ContainerFilter `mapstructure:"containers" json:"containers" yaml:"containers"`
+	Database   DatabaseConfig  `mapstructure:"database" json:"database" yaml:"database"`
 }
 
 type DashboardConfig struct {

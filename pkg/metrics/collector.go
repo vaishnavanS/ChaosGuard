@@ -12,13 +12,13 @@ import (
 
 // Collector gathers metrics from Docker containers and updates the Prometheus registry
 type Collector struct {
-	mu             sync.RWMutex
-	registry       *Registry
-	containerCli   domain.ContainerController
-	containerRepo  domain.ContainerRepository
-	ticker         *time.Ticker
-	stopChan       chan struct{}
-	running        bool
+	mu              sync.RWMutex
+	registry        *Registry
+	containerCli    domain.ContainerController
+	containerRepo   domain.ContainerRepository
+	ticker          *time.Ticker
+	stopChan        chan struct{}
+	running         bool
 	collectInterval time.Duration
 }
 

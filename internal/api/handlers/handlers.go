@@ -32,6 +32,7 @@ type Handler struct {
 	scheduler      *scheduler.Scheduler
 	stateProvider  RuntimeStateProvider
 	version        string
+	stopFunc       func()
 }
 
 // NewHandler creates a new Handler instance
@@ -413,4 +414,33 @@ func (h *Handler) GetRuntime(c *gin.Context) {
 			State: h.stateProvider.GetState(),
 		},
 	})
+}
+
+// SetStopFunc registers the runtime shutdown callback
+func (h *Handler) SetStopFunc(stopFunc func()) {
+	h.stopFunc = stopFunc
+}
+
+// StopRuntime triggers a graceful shutdown of the application
+// @Summary Stop Runtime
+// @Description Triggers a graceful shutdown of the ChaosGuard daemon
+// @Tags Runtime
+// @Produce json
+// @Success 200 {object} responses.SuccessResponse
+// @Router /runtime/stop [post]
+func (h *Handler) StopRuntime(c *gin.Context) {
+	if h.stopFunc == nil {
+		c.JSON(500, responses.ErrorResponse{Success: false, Error: "shutdown handler not registered"})
+		return
+	}
+
+	c.JSON(200, responses.SuccessResponse{
+		Success: true,
+		Data:    "Daemon shutdown initiated",
+	})
+
+	go func() {
+		time.Sleep(100 * time.Millisecond)
+		h.stopFunc()
+	}()
 }

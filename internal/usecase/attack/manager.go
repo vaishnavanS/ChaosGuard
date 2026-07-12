@@ -13,10 +13,10 @@ import (
 
 // Manager implements domain.AttackManager to register and execute chaos attacks.
 type Manager struct {
-	mu               sync.RWMutex
-	attacks          map[string]domain.Attack
-	experimentRepo   domain.ExperimentRepository
-	chaosCollector   *metrics.ChaosCollector
+	mu             sync.RWMutex
+	attacks        map[string]domain.Attack
+	experimentRepo domain.ExperimentRepository
+	chaosCollector *metrics.ChaosCollector
 }
 
 // NewManager creates a new Manager instance.

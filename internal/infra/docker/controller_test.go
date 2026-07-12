@@ -79,24 +79,24 @@ func TestDockerController_Discover(t *testing.T) {
 	mockCli := newMockDockerClient()
 	mockCli.containers = []container.Summary{
 		{
-			ID:     "c1",
-			Names:  []string{"/web-service"},
-			Image:  "nginx:alpine",
-			State:  "running",
+			ID:      "c1",
+			Names:   []string{"/web-service"},
+			Image:   "nginx:alpine",
+			State:   "running",
 			Created: 1625097600,
 		},
 		{
-			ID:     "c2",
-			Names:  []string{"/my-postgres-db"},
-			Image:  "postgres:13",
-			State:  "running",
+			ID:      "c2",
+			Names:   []string{"/my-postgres-db"},
+			Image:   "postgres:13",
+			State:   "running",
 			Created: 1625097600,
 		},
 		{
-			ID:     "c3",
-			Names:  []string{"/ignored-service"},
-			Image:  "alpine",
-			State:  "stopped",
+			ID:      "c3",
+			Names:   []string{"/ignored-service"},
+			Image:   "alpine",
+			State:   "stopped",
 			Created: 1625097600,
 		},
 	}

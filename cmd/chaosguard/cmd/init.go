@@ -15,12 +15,12 @@ var initCmd = &cobra.Command{
 	Long:  `Creates a default chaosguard.yaml configuration file in the current directory if it does not exist.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		printAction("init", "Initializing configuration file 'chaosguard.yaml'")
-		
+
 		path := cfgFile
 		if path == "" {
 			path = config.DefaultConfigName
 		}
-		
+
 		err := config.WriteDefault(path)
 		if err != nil {
 			logger.Error(err, "Failed to initialize configuration")

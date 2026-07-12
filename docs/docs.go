@@ -332,6 +332,26 @@ const docTemplate = `{
                 }
             }
         },
+        "/runtime/stop": {
+            "post": {
+                "description": "Triggers a graceful shutdown of the ChaosGuard daemon",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Runtime"
+                ],
+                "summary": "Stop Runtime",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/responses.SuccessResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/scheduler/start": {
             "post": {
                 "description": "Resumes the background chaos failure injection loop",

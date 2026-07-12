@@ -160,8 +160,8 @@ func (m *mockRecoveryManager) Recover(ctx context.Context, experiment *domain.Ex
 	experiment.Status = domain.ExperimentStatusRecovered
 	return nil
 }
-func (m *mockRecoveryManager) RecoverAllActive(ctx context.Context) error { return nil }
-func (m *mockRecoveryManager) TrackExperiment(experiment *domain.Experiment)    {}
+func (m *mockRecoveryManager) RecoverAllActive(ctx context.Context) error    { return nil }
+func (m *mockRecoveryManager) TrackExperiment(experiment *domain.Experiment) {}
 
 // Mock StateProvider
 type mockStateProvider struct {
@@ -418,5 +418,37 @@ func TestMiddleware_RequestID(t *testing.T) {
 	reqID := w.Header().Get("X-Request-ID")
 	if reqID == "" {
 		t.Error("expected X-Request-ID header to be set in response")
+	}
+}
+
+func TestStopRuntime(t *testing.T) {
+	h, router := setupTestRouter()
+
+	// 1. Without stop callback registered
+	req, _ := http.NewRequest("POST", "/runtime/stop", nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusInternalServerError {
+		t.Errorf("expected status 500 when stopFunc is nil, got %d", w.Code)
+	}
+
+	// 2. With stop callback registered
+	stopCalled := false
+	h.SetStopFunc(func() {
+		stopCalled = true
+	})
+
+	w2 := httptest.NewRecorder()
+	router.ServeHTTP(w2, req)
+
+	if w2.Code != http.StatusOK {
+		t.Errorf("expected status 200 when stopFunc is set, got %d", w2.Code)
+	}
+
+	// Wait to let async goroutine execute stopFunc
+	time.Sleep(150 * time.Millisecond)
+	if !stopCalled {
+		t.Error("expected stopFunc callback to be called")
 	}
 }

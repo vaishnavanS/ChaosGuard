@@ -1,8 +1,8 @@
 package api
 
 import (
-	"chaosguard/internal/api/handlers"
 	_ "chaosguard/docs" // Load generated Swagger docs
+	"chaosguard/internal/api/handlers"
 
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -43,6 +43,7 @@ func SetupRouter(h *handlers.Handler) *gin.Engine {
 
 	// Runtime status endpoint
 	r.GET("/runtime", h.GetRuntime)
+	r.POST("/runtime/stop", h.StopRuntime)
 
 	// Reuse existing Prometheus handler
 	r.GET("/metrics", gin.WrapH(promhttp.Handler()))

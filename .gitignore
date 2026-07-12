@@ -1,0 +1,31 @@
+# Binaries and executable files
+/chaosguard
+/cmd/chaosguard/chaosguard
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Databases and SQLite artifacts
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Test coverage, profiling, and benchmarking outputs
+*.out
+*.test
+*.prof
+
+# Log files
+*.log
+
+# IDE and developer workspace directories
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

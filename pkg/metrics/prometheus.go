@@ -21,12 +21,12 @@ type Registry struct {
 	ContainersStopped prometheus.Gauge
 
 	// Chaos experiment metrics
-	ExperimentsTotal       prometheus.Counter
-	ExperimentsRunning     prometheus.Gauge
-	ExperimentsCompleted   prometheus.Counter
-	ExperimentsFailed      prometheus.Counter
-	ExperimentsRecovered   prometheus.Counter
-	ExperimentDurationMs   prometheus.Histogram
+	ExperimentsTotal     prometheus.Counter
+	ExperimentsRunning   prometheus.Gauge
+	ExperimentsCompleted prometheus.Counter
+	ExperimentsFailed    prometheus.Counter
+	ExperimentsRecovered prometheus.Counter
+	ExperimentDurationMs prometheus.Histogram
 
 	// Attack metrics
 	AttacksExecuted prometheus.Counter

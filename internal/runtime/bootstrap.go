@@ -132,10 +132,16 @@ func Bootstrap(opts Options) (*App, error) {
 
 	deps.APIServer = api.NewServer(cfg.Dashboard.Port, apiHandler)
 
-	return &App{
+	app := &App{
 		deps:      deps,
 		lifecycle: lifecycle,
-	}, nil
+	}
+
+	apiHandler.SetStopFunc(func() {
+		app.Stop()
+	})
+
+	return app, nil
 }
 
 func buildDependencies(cfg *config.Config, hooks BootstrapHooks) (*Dependencies, error) {

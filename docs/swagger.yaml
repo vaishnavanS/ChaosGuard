@@ -328,6 +328,19 @@ paths:
       summary: Get Runtime State
       tags:
       - Runtime
+  /runtime/stop:
+    post:
+      description: Triggers a graceful shutdown of the ChaosGuard daemon
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/responses.SuccessResponse'
+      summary: Stop Runtime
+      tags:
+      - Runtime
   /scheduler/start:
     post:
       description: Resumes the background chaos failure injection loop
