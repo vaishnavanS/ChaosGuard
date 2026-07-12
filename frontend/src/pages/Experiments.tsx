@@ -30,7 +30,7 @@ export default function Experiments() {
   const { data: response, isLoading } = useQuery({
     queryKey: ['experimentsList'],
     queryFn: () => api.getExperiments(),
-    refetchInterval: 5000,
+    refetchInterval: 3000,
   });
 
   // Mutations
@@ -161,7 +161,7 @@ export default function Experiments() {
         </div>
 
         {/* Paginated Table container */}
-        <div className="border border-slate-800/85 rounded-xl overflow-hidden bg-slate-900/5">
+        <div className="border border-slate-850 rounded-xl overflow-hidden bg-slate-900/5">
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left text-slate-400">
               <thead className="text-xs uppercase bg-[#0f172a]/50 text-slate-400 border-b border-slate-800">
@@ -174,7 +174,7 @@ export default function Experiments() {
                   <th className="px-6 py-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/80">
+              <tbody className="divide-y divide-slate-850">
                 {paginatedList.length > 0 ? (
                   paginatedList.map((exp) => (
                     <tr 
@@ -188,16 +188,16 @@ export default function Experiments() {
                         {exp.container_name || exp.target_container_id.slice(0, 12)}
                       </td>
                       <td className="px-6 py-4">
-                        <span className="font-mono text-xs uppercase text-violet-400 bg-violet-500/5 px-2 py-0.5 rounded border border-violet-500/10">
+                        <span className="font-mono text-[10px] uppercase text-violet-400 bg-violet-500/5 px-2 py-0.5 rounded border border-violet-500/10 font-bold">
                           {exp.attack_type}
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${getStatusBadge(exp.status)}`}>
+                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${getStatusBadge(exp.status)}`}>
                           {exp.status}
                         </span>
                       </td>
-                      <td className="px-6 py-4 font-mono text-xs">
+                      <td className="px-6 py-4 font-mono text-xs text-gray-300">
                         {exp.duration}s
                       </td>
                       <td className="px-6 py-4 text-xs text-slate-500">
@@ -241,7 +241,7 @@ export default function Experiments() {
           {/* Table pagination stats footer */}
           {totalPages > 1 && (
             <div className="px-6 py-4 flex items-center justify-between border-t border-slate-800 bg-[#0f172a]/20">
-              <span className="text-xs text-slate-500">
+              <span className="text-xs text-slate-500 font-semibold uppercase tracking-wider">
                 Page {currentPage} of {totalPages}
               </span>
               <div className="flex gap-2">
@@ -268,9 +268,9 @@ export default function Experiments() {
 
       {/* Details Slide Drawer overlay inside table layout */}
       {selectedExperiment && (
-        <div className="w-full lg:w-96 p-6 rounded-xl border border-slate-800 bg-slate-900/60 backdrop-blur-md shadow-xl flex flex-col gap-4 animate-in slide-in-from-right-10 duration-200">
+        <div className="w-full lg:w-96 p-6 rounded-xl border border-slate-800 bg-[#0f172a]/80 backdrop-blur-md shadow-2xl flex flex-col gap-4 animate-in slide-in-from-right-10 duration-200">
           <div className="flex justify-between items-start">
-            <h3 className="font-bold text-base text-gray-200">Experiment Details</h3>
+            <h3 className="font-bold text-base text-gray-200 uppercase tracking-wide">Disruption Details</h3>
             <button 
               onClick={() => setSelectedExperiment(null)}
               className="p-1 rounded-full border border-slate-800 text-slate-400 hover:text-white"
@@ -282,38 +282,38 @@ export default function Experiments() {
           <div className="space-y-4 text-xs text-slate-400">
             
             <div className="border-b border-slate-800/80 pb-2">
-              <span className="text-slate-500 uppercase tracking-wider">Experiment ID</span>
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Disruption ID</span>
               <p className="font-mono mt-1 text-gray-300 break-all">{selectedExperiment.id}</p>
             </div>
 
             <div className="border-b border-slate-800/80 pb-2">
-              <span className="text-slate-500 uppercase tracking-wider">Target Container</span>
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Target Container</span>
               <p className="font-bold text-sm text-gray-300 mt-1">{selectedExperiment.container_name || '-'}</p>
-              <p className="font-mono text-[10px] text-slate-500 break-all">{selectedExperiment.target_container_id}</p>
+              <p className="font-mono text-[9px] text-slate-500 break-all">{selectedExperiment.target_container_id}</p>
             </div>
 
             <div className="grid grid-cols-2 gap-2 border-b border-slate-800/80 pb-2">
               <div>
-                <span className="text-slate-500 uppercase tracking-wider">Attack</span>
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Attack Type</span>
                 <p className="font-mono font-bold mt-1 text-violet-400 uppercase">{selectedExperiment.attack_type}</p>
               </div>
               <div>
-                <span className="text-slate-500 uppercase tracking-wider">Duration</span>
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Duration</span>
                 <p className="font-bold text-sm text-gray-300 mt-1">{selectedExperiment.duration} seconds</p>
               </div>
             </div>
 
             <div className="border-b border-slate-800/80 pb-2">
-              <span className="text-slate-500 uppercase tracking-wider">Status State</span>
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Execution status</span>
               <div className="mt-1">
-                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${getStatusBadge(selectedExperiment.status)}`}>
+                <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${getStatusBadge(selectedExperiment.status)}`}>
                   {selectedExperiment.status}
                 </span>
               </div>
             </div>
 
             <div className="border-b border-slate-800/80 pb-2">
-              <span className="text-slate-500 uppercase tracking-wider flex items-center gap-1">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1">
                 <Calendar className="h-3 w-3" /> Timing Logs
               </span>
               <div className="mt-2 space-y-1 bg-slate-950/20 p-2 rounded">
@@ -325,14 +325,14 @@ export default function Experiments() {
             {selectedExperiment.error_message && (
               <div className="border border-rose-950/40 bg-rose-950/5 p-3 rounded-lg text-rose-400">
                 <span className="uppercase text-[9px] font-bold flex items-center gap-1">
-                  <AlertOctagon className="h-3.5 w-3.5" /> Error Log
+                  <AlertOctagon className="h-3.5 w-3.5" /> Disruption Error
                 </span>
-                <p className="mt-1 text-xs text-rose-300/80 leading-relaxed font-mono">{selectedExperiment.error_message}</p>
+                <p className="mt-1 text-xs text-rose-350/80 leading-relaxed font-mono">{selectedExperiment.error_message}</p>
               </div>
             )}
 
             <div className="border-b border-slate-800/80 pb-2">
-              <span className="text-slate-500 uppercase tracking-wider">Injected Parameters</span>
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Injected Parameters</span>
               <pre className="font-mono text-[10px] bg-[#0c1222] p-3 rounded-lg border border-slate-800 text-gray-300 mt-1 overflow-x-auto">
                 {JSON.stringify(JSON.parse(selectedExperiment.parameters || '{}'), null, 2)}
               </pre>

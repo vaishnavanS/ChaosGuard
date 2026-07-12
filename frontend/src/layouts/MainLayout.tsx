@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react';
-import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
+import { useEffect, useState, useRef } from 'react';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../services/api';
+import type { Experiment } from '../types';
+import { AnimatePresence, motion } from 'framer-motion';
 import { 
   LayoutDashboard, 
   Layers, 
@@ -13,18 +15,27 @@ import {
   CloudLightning,
   Sun,
   Moon,
-  Wifi,
   WifiOff,
-  Menu,
+  Lightbulb,
+  Bell,
   X
 } from 'lucide-react';
+
+interface Toast {
+  id: string;
+  message: string;
+  type: 'info' | 'success' | 'warning' | 'error';
+}
 
 export default function MainLayout() {
   const location = useLocation();
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     return (localStorage.getItem('chaosguard_theme') as 'light' | 'dark') || 'dark';
   });
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const [toasts, setToasts] = useState<Toast[]>([]);
+  const prevExperimentsRef = useRef<Experiment[]>([]);
+  const prevOnlineRef = useRef<boolean>(true);
 
   // Apply theme class to HTML element on change
   useEffect(() => {
@@ -49,6 +60,63 @@ export default function MainLayout() {
 
   const isOnline = !isError && healthData?.success;
 
+  // Query experiments to detect new attacks or recoveries for toasts
+  const { data: experimentsRes } = useQuery({
+    queryKey: ['experimentsToasts'],
+    queryFn: () => api.getExperiments(),
+    refetchInterval: 4000,
+    enabled: isOnline,
+  });
+
+  // Toast Trigger Engine
+  useEffect(() => {
+    // 1. Online state transition toasts
+    if (isOnline !== prevOnlineRef.current) {
+      if (isOnline) {
+        addToast('ChaosGuard daemon connection restored.', 'success');
+      } else {
+        addToast('Docker daemon or ChaosGuard REST API unreachable!', 'error');
+      }
+      prevOnlineRef.current = !!isOnline;
+    }
+
+    if (!isOnline || !experimentsRes?.data) return;
+
+    const currentExps = experimentsRes.data;
+    const prevExps = prevExperimentsRef.current;
+
+    if (prevExps.length > 0) {
+      // Find new experiments
+      currentExps.forEach(curr => {
+        const foundPrev = prevExps.find(p => p.id === curr.id);
+        if (!foundPrev) {
+          addToast(`Chaos Attack Initiated: ${curr.attack_type.toUpperCase()} on ${curr.container_name}`, 'warning');
+        } else if (curr.status !== foundPrev.status) {
+          // Status change toast
+          if (curr.status === 'completed' || curr.status === 'recovered') {
+            addToast(`Resilience Restored: ${curr.container_name} recovered successfully.`, 'success');
+          } else if (curr.status === 'failed') {
+            addToast(`Resilience Failure: ${curr.container_name} recovery failed.`, 'error');
+          }
+        }
+      });
+    }
+
+    prevExperimentsRef.current = currentExps;
+  }, [isOnline, experimentsRes]);
+
+  const addToast = (message: string, type: Toast['type']) => {
+    const id = Math.random().toString(36).substring(2, 9);
+    setToasts(prev => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      removeToast(id);
+    }, 6000);
+  };
+
+  const removeToast = (id: string) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  };
+
   const toggleTheme = () => {
     setTheme(prev => prev === 'light' ? 'dark' : 'light');
   };
@@ -60,6 +128,7 @@ export default function MainLayout() {
     { to: '/metrics', label: 'Metrics', icon: Activity },
     { to: '/runtime', label: 'Runtime', icon: Cpu },
     { to: '/logs', label: 'Live Logs', icon: Terminal },
+    { to: '/recommendations', label: 'Recommendations', icon: Lightbulb },
     { to: '/settings', label: 'Settings', icon: Settings },
   ];
 
@@ -68,17 +137,17 @@ export default function MainLayout() {
       
       {/* Offline Alert Banner */}
       {!isOnline && (
-        <div className="absolute top-0 left-0 right-0 z-50 bg-rose-600/90 text-white py-2 px-4 text-center text-sm font-semibold flex items-center justify-center gap-2 backdrop-blur-md">
+        <div className="absolute top-0 left-0 right-0 z-50 bg-rose-600/90 text-white py-2 px-4 text-center text-xs font-bold flex items-center justify-center gap-2 backdrop-blur-md">
           <WifiOff className="h-4 w-4 animate-pulse" />
           ChaosGuard Daemon is offline. Please start it using 'chaosguard start' or update the API address in settings.
         </div>
       )}
 
       {/* Sidebar for Desktop */}
-      <aside className={`hidden md:flex flex-col w-64 border-r ${theme === 'dark' ? 'bg-[#0f172a]/80 border-slate-800' : 'bg-white border-gray-200'} shrink-0`}>
+      <aside className={`hidden md:flex flex-col w-64 border-r ${theme === 'dark' ? 'bg-[#0f172a]/95 border-slate-900' : 'bg-white border-gray-200'} shrink-0`}>
         <div className="h-16 flex items-center gap-3 px-6 border-b border-inherit">
           <CloudLightning className="h-6 w-6 text-violet-500 animate-pulse-status" />
-          <span className="font-bold text-lg tracking-wider bg-gradient-to-r from-violet-400 to-indigo-500 bg-clip-text text-transparent">
+          <span className="font-extrabold text-base tracking-widest bg-gradient-to-r from-violet-400 to-indigo-500 bg-clip-text text-transparent">
             CHAOSGUARD
           </span>
         </div>
@@ -91,12 +160,12 @@ export default function MainLayout() {
                 key={item.to}
                 to={item.to}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
+                  `flex items-center gap-3 px-4 py-3.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all duration-200 border ${
                     isActive
-                      ? 'bg-violet-600/15 text-violet-400 border border-violet-500/20 shadow-sm'
+                      ? 'bg-violet-600/10 text-violet-400 border-violet-500/20 shadow-sm'
                       : theme === 'dark' 
-                        ? 'text-gray-400 hover:bg-slate-800/50 hover:text-gray-100' 
-                        : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                        ? 'text-gray-400 border-transparent hover:bg-slate-800/40 hover:text-gray-100' 
+                        : 'text-gray-600 border-transparent hover:bg-gray-100 hover:text-gray-900'
                   }`
                 }
               >
@@ -108,87 +177,35 @@ export default function MainLayout() {
         </nav>
 
         {/* Footer info */}
-        <div className={`p-4 border-t border-inherit text-xs ${theme === 'dark' ? 'text-slate-500' : 'text-gray-400'}`}>
-          ChaosGuard Core v0.3.0
+        <div className={`p-4 border-t border-inherit text-[10px] uppercase font-bold tracking-wider ${theme === 'dark' ? 'text-slate-600' : 'text-gray-400'}`}>
+          ChaosGuard Core v0.3.1
         </div>
       </aside>
 
-      {/* Mobile Drawer Menu */}
-      <div className="md:hidden flex items-center justify-between p-4 border-b border-inherit bg-slate-900/40 backdrop-blur-md">
-        <div className="flex items-center gap-2">
-          <CloudLightning className="h-5 w-5 text-violet-500" />
-          <span className="font-bold text-sm tracking-wide text-white">CHAOSGUARD</span>
-        </div>
-        <button 
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="p-1.5 rounded-lg border border-slate-700 text-gray-300"
-        >
-          {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </button>
-      </div>
-
-      {isMobileMenuOpen && (
-        <div className="md:hidden absolute inset-0 z-40 bg-[#0b0f19]/95 backdrop-blur-lg flex flex-col p-6 space-y-6">
-          <div className="flex justify-between items-center">
-            <span className="font-bold text-lg text-violet-400">Navigation</span>
-            <button onClick={() => setIsMobileMenuOpen(false)} className="p-1 rounded-full border border-slate-800">
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-          <nav className="space-y-2">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.to}
-                  to={item.to}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className={`flex items-center gap-3 px-4 py-3.5 rounded-lg text-base font-medium ${
-                    location.pathname === item.to ? 'bg-violet-600/20 text-violet-400' : 'text-gray-400'
-                  }`}
-                >
-                  <Icon className="h-5 w-5" />
-                  {item.label}
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
-      )}
-
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
-        <header className={`h-16 flex items-center justify-between px-6 md:px-8 border-b ${theme === 'dark' ? 'bg-[#0f172a]/20 border-slate-800' : 'bg-white border-gray-200'} shrink-0 pt-2`}>
+        <header className={`h-16 flex items-center justify-between px-6 md:px-8 border-b ${theme === 'dark' ? 'bg-[#0f172a]/20 border-slate-900' : 'bg-white border-gray-200'} shrink-0 pt-2`}>
           <div>
-            <h1 className="text-xl font-semibold tracking-tight my-0 py-0">
+            <h1 className="text-sm uppercase font-bold tracking-widest text-slate-500 my-0 py-0">
               {navItems.find(i => i.to === location.pathname)?.label || 'ChaosGuard'}
             </h1>
           </div>
           
           <div className="flex items-center gap-4">
             {/* Online Status Dot */}
-            <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold ${
+            <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
               isOnline 
-                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
-                : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/10' 
+                : 'bg-rose-500/10 text-rose-400 border border-rose-500/10'
             }`}>
-              {isOnline ? (
-                <>
-                  <Wifi className="h-3.5 w-3.5" />
-                  <span>ONLINE</span>
-                </>
-              ) : (
-                <>
-                  <WifiOff className="h-3.5 w-3.5 animate-pulse" />
-                  <span>OFFLINE</span>
-                </>
-              )}
+              <span className={`h-1.5 w-1.5 rounded-full ${isOnline ? 'bg-emerald-400' : 'bg-rose-400 animate-pulse'}`}></span>
+              {isOnline ? 'Online' : 'Offline'}
             </div>
 
             {/* Dark Mode Switcher */}
             <button 
               onClick={toggleTheme} 
-              className={`p-2 rounded-lg border ${theme === 'dark' ? 'border-slate-800 text-amber-400 hover:bg-slate-800' : 'border-gray-200 text-slate-600 hover:bg-gray-100'}`}
+              className={`p-2 rounded-lg border ${theme === 'dark' ? 'border-slate-850 text-amber-400 hover:bg-slate-800' : 'border-gray-200 text-slate-600 hover:bg-gray-100'}`}
               title="Toggle Theme"
             >
               {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
@@ -199,6 +216,41 @@ export default function MainLayout() {
         <main className={`flex-1 p-6 md:p-8 ${!isOnline ? 'pt-16' : ''}`}>
           <Outlet />
         </main>
+      </div>
+
+      {/* Floating Toast Notification Containers */}
+      <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3 w-80 pointer-events-none">
+        <AnimatePresence>
+          {toasts.map(toast => (
+            <motion.div
+              key={toast.id}
+              layout
+              initial={{ opacity: 0, y: 30, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.85, transition: { duration: 0.15 } }}
+              className={`p-4 rounded-xl border pointer-events-auto flex items-start justify-between gap-3 shadow-xl backdrop-blur-md ${
+                toast.type === 'success' 
+                  ? 'bg-emerald-950/80 border-emerald-500/20 text-emerald-300' 
+                  : toast.type === 'warning'
+                    ? 'bg-amber-950/80 border-amber-500/20 text-amber-300'
+                    : toast.type === 'error'
+                      ? 'bg-rose-950/80 border-rose-500/20 text-rose-300'
+                      : 'bg-slate-900/80 border-slate-700/20 text-slate-300'
+              }`}
+            >
+              <div className="flex gap-2">
+                <Bell className="h-4.5 w-4.5 shrink-0 mt-0.5" />
+                <p className="text-xs font-semibold leading-relaxed">{toast.message}</p>
+              </div>
+              <button 
+                onClick={() => removeToast(toast.id)}
+                className="p-0.5 rounded hover:bg-black/10 text-inherit shrink-0"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </motion.div>
+          ))}
+        </AnimatePresence>
       </div>
 
     </div>

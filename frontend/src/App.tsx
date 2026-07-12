@@ -8,6 +8,7 @@ import Metrics from './pages/Metrics';
 import Runtime from './pages/Runtime';
 import Logs from './pages/Logs';
 import Settings from './pages/Settings';
+import Recommendations from './pages/Recommendations';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -30,6 +31,7 @@ export default function App() {
             <Route path="metrics" element={<Metrics />} />
             <Route path="runtime" element={<Runtime />} />
             <Route path="logs" element={<Logs />} />
+            <Route path="recommendations" element={<Recommendations />} />
             <Route path="settings" element={<Settings />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
