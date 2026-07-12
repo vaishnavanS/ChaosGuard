@@ -452,3 +452,15 @@ func TestStopRuntime(t *testing.T) {
 		t.Error("expected stopFunc callback to be called")
 	}
 }
+
+func TestGetLogs(t *testing.T) {
+	_, router := setupTestRouter()
+
+	req, _ := http.NewRequest("GET", "/logs", nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status 200, got %d", w.Code)
+	}
+}

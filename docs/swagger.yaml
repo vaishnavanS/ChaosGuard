@@ -310,6 +310,26 @@ paths:
       summary: Get Health status
       tags:
       - Health
+  /logs:
+    get:
+      description: Returns the latest daemon log lines from the circular log buffer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/responses.SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    type: string
+                  type: array
+              type: object
+      summary: Get Live Logs
+      tags:
+      - Logs
   /runtime:
     get:
       description: Returns the lifecycle state of the ChaosGuard daemon

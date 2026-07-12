@@ -47,6 +47,9 @@ func TestCLICommands(t *testing.T) {
 				w.WriteHeader(http.StatusOK)
 				_, _ = w.Write([]byte(`{"success":true,"data":[{"id":"exp1","target_container_id":"c1","status":"completed"}]}`))
 			}
+		case "/logs":
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"success":true,"data":["test log line 1","test log line 2"]}`))
 		default:
 			w.WriteHeader(http.StatusNotFound)
 			_, _ = w.Write([]byte(`{"success":false,"error":"not found"}`))

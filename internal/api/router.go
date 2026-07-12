@@ -45,6 +45,9 @@ func SetupRouter(h *handlers.Handler) *gin.Engine {
 	r.GET("/runtime", h.GetRuntime)
 	r.POST("/runtime/stop", h.StopRuntime)
 
+	// Live logs endpoint
+	r.GET("/logs", h.GetLogs)
+
 	// Reuse existing Prometheus handler
 	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
 

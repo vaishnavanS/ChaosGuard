@@ -3,10 +3,39 @@ package logger
 import (
 	"io"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/rs/zerolog"
 )
+
+// logBuffer is a thread-safe circular buffer for storing recent log lines
+type logBuffer struct {
+	mu    sync.RWMutex
+	lines []string
+	limit int
+}
+
+func (b *logBuffer) Write(p []byte) (n int, err error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.lines = append(b.lines, string(p))
+	if len(b.lines) > b.limit {
+		b.lines = b.lines[1:]
+	}
+	return len(p), nil
+}
+
+func (b *logBuffer) GetLines() []string {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+	copied := make([]string, len(b.lines))
+	copy(copied, b.lines)
+	return copied
+}
+
+// ActiveLogBuffer holds the latest 500 daemon logs
+var ActiveLogBuffer = &logBuffer{limit: 500}
 
 // Log is the global logger instance
 var Log zerolog.Logger
@@ -29,7 +58,10 @@ func Setup(verbose bool, daemon bool) {
 	}
 
 	zerolog.SetGlobalLevel(level)
-	Log = zerolog.New(output).With().Timestamp().Logger()
+
+	// Route logs to both standard output writer and in-memory buffer
+	multi := zerolog.MultiLevelWriter(output, ActiveLogBuffer)
+	Log = zerolog.New(multi).With().Timestamp().Logger()
 }
 
 // Info logs an info message

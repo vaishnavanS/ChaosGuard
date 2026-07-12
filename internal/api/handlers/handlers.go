@@ -444,3 +444,17 @@ func (h *Handler) StopRuntime(c *gin.Context) {
 		h.stopFunc()
 	}()
 }
+
+// GetLogs returns the current live log buffer
+// @Summary Get Live Logs
+// @Description Returns the latest daemon log lines from the circular log buffer
+// @Tags Logs
+// @Produce json
+// @Success 200 {object} responses.SuccessResponse{data=[]string}
+// @Router /logs [get]
+func (h *Handler) GetLogs(c *gin.Context) {
+	c.JSON(200, responses.SuccessResponse{
+		Success: true,
+		Data:    logger.ActiveLogBuffer.GetLines(),
+	})
+}
