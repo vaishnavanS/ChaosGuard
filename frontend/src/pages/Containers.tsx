@@ -15,7 +15,9 @@ import {
   Search,
   ShieldCheck,
   ShieldAlert,
-  Loader2
+  Loader2,
+  Share2,
+  HardDrive
 } from 'lucide-react';
 
 export default function Containers() {
@@ -117,16 +119,12 @@ export default function Containers() {
   };
 
   const triggerAction = (container: Container, type: string) => {
-    if (type === 'kill' || type === 'stop' || type === 'restart') {
-      setConfirmDialog({
-        open: true,
-        containerId: container.id,
-        containerName: container.name,
-        attackType: type
-      });
-    } else {
-      injectAttack.mutate({ id: container.id, type });
-    }
+    setConfirmDialog({
+      open: true,
+      containerId: container.id,
+      containerName: container.name,
+      attackType: type
+    });
   };
 
   return (
@@ -174,7 +172,7 @@ export default function Containers() {
                 key={container.id} 
                 className={`p-6 rounded-xl border flex flex-col justify-between transition-all duration-200 relative overflow-hidden ${
                   activeExp
-                    ? 'border-rose-500 bg-rose-950/10 shadow-[0_0_15px_rgba(239,68,68,0.05)]'
+                    ? 'border-rose-500 bg-[#1e131d] shadow-[0_0_15px_rgba(239,68,68,0.05)]'
                     : container.status === 'running' 
                       ? 'border-slate-800 bg-[#0f172a]/10 hover:border-slate-700/80' 
                       : 'border-rose-950/40 bg-rose-950/5'
@@ -184,20 +182,20 @@ export default function Containers() {
                 {/* Active Attack Banner Indicator */}
                 {activeExp && (
                   <div className="absolute top-0 left-0 right-0 bg-rose-600/90 text-white text-[9px] font-bold uppercase tracking-widest text-center py-0.5 animate-pulse">
-                    Stress Test Active: {activeExp.attack_type}
+                    Stress active: {activeExp.attack_type.toUpperCase()}
                   </div>
                 )}
 
                 {/* Upper Details */}
                 <div className={activeExp ? 'pt-2' : ''}>
-                  <div className="flex justify-between items-start">
+                  <div className="flex justify-between items-start gap-2">
                     <div className="truncate max-w-[70%]">
                       <h3 className="font-bold text-sm truncate text-gray-200" title={container.name}>{container.name}</h3>
                       <p className="text-[10px] text-slate-500 mt-0.5 truncate font-mono">{container.image}</p>
                     </div>
 
                     {/* Status Badge */}
-                    <div className="flex flex-col items-end gap-1.5">
+                    <div className="flex flex-col items-end gap-1.5 shrink-0">
                       <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${
                         container.status === 'running'
                           ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
@@ -222,37 +220,50 @@ export default function Containers() {
                   </div>
 
                   {/* Resource Stats */}
-                  <div className="grid grid-cols-3 gap-2 mt-6 text-xs text-slate-400">
-                    <div className="flex flex-col gap-1">
-                      <span className="text-[10px] text-slate-500 flex items-center gap-1 uppercase font-bold tracking-wider">
-                        <Cpu className="h-3.5 w-3.5 text-slate-600" /> CPU
-                      </span>
-                      <span className="font-bold text-gray-200">{container.cpu_usage.toFixed(1)}%</span>
+                  <div className="grid grid-cols-2 gap-4 mt-6 text-xs text-slate-405">
+                    <div className="flex items-center gap-2">
+                      <Cpu className="h-4 w-4 text-slate-500" />
+                      <div className="flex flex-col">
+                        <span className="text-[9px] text-slate-550 uppercase font-bold tracking-wider">CPU usage</span>
+                        <span className="font-bold text-gray-200">{container.cpu_usage.toFixed(1)}%</span>
+                      </div>
                     </div>
-                    <div className="flex flex-col gap-1">
-                      <span className="text-[10px] text-slate-500 flex items-center gap-1 uppercase font-bold tracking-wider">
-                        <Database className="h-3.5 w-3.5 text-slate-600" /> RAM
-                      </span>
-                      <span className="font-bold text-gray-200">{formatBytes(container.memory_usage)}</span>
+                    
+                    <div className="flex items-center gap-2">
+                      <Database className="h-4 w-4 text-slate-500" />
+                      <div className="flex flex-col">
+                        <span className="text-[9px] text-slate-550 uppercase font-bold tracking-wider">RAM Usage</span>
+                        <span className="font-bold text-gray-200">{formatBytes(container.memory_usage)}</span>
+                      </div>
                     </div>
-                    <div className="flex flex-col gap-1">
-                      <span className="text-[10px] text-slate-500 flex items-center gap-1 uppercase font-bold tracking-wider">
-                        <Clock className="h-3.5 w-3.5 text-slate-600" /> UPTIME
-                      </span>
-                      <span className="font-bold text-gray-200">{formatUptime(container.uptime)}</span>
+
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-slate-500" />
+                      <div className="flex flex-col">
+                        <span className="text-[9px] text-slate-550 uppercase font-bold tracking-wider">Uptime</span>
+                        <span className="font-bold text-gray-200">{formatUptime(container.uptime)}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <HardDrive className="h-4 w-4 text-slate-500" />
+                      <div className="flex flex-col">
+                        <span className="text-[9px] text-slate-550 uppercase font-bold tracking-wider">Network</span>
+                        <span className="font-bold text-gray-200 font-mono">1.2 KB/s</span>
+                      </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Container control inputs */}
                 {isMonitored && (
-                  <div className="mt-6 pt-4 border-t border-slate-800/80 grid grid-cols-4 gap-2">
+                  <div className="mt-6 pt-4 border-t border-slate-805 grid grid-cols-4 gap-2">
                     
                     {/* Pause/Unpause */}
                     {container.status === 'paused' ? (
                       <button 
                         onClick={() => triggerAction(container, 'unpause')}
-                        className="py-2 px-1 flex flex-col items-center justify-center gap-1 rounded-lg text-[9px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-500/5 hover:bg-emerald-500/15 cursor-pointer transition-colors border border-transparent hover:border-emerald-500/20"
+                        className="py-2 px-1 flex flex-col items-center justify-center gap-1 rounded-lg text-[9px] font-bold uppercase tracking-wider text-emerald-450 bg-emerald-500/5 hover:bg-emerald-500/15 cursor-pointer transition-colors border border-transparent hover:border-emerald-500/20"
                         title="Resume Container Execution"
                       >
                         <Play className="h-3.5 w-3.5" />
@@ -262,7 +273,7 @@ export default function Containers() {
                       <button 
                         onClick={() => triggerAction(container, 'pause')}
                         disabled={container.status !== 'running'}
-                        className="py-2 px-1 flex flex-col items-center justify-center gap-1 rounded-lg text-[9px] font-bold uppercase tracking-wider text-amber-400 bg-amber-500/5 hover:bg-amber-500/15 cursor-pointer transition-colors border border-transparent hover:border-amber-500/20 disabled:opacity-30 disabled:pointer-events-none"
+                        className="py-2 px-1 flex flex-col items-center justify-center gap-1 rounded-lg text-[9px] font-bold uppercase tracking-wider text-amber-450 bg-amber-500/5 hover:bg-amber-500/15 cursor-pointer transition-colors border border-transparent hover:border-amber-500/20 disabled:opacity-30 disabled:pointer-events-none"
                         title="Freeze Container Threads"
                       >
                         <Pause className="h-3.5 w-3.5" />
@@ -274,7 +285,7 @@ export default function Containers() {
                     <button 
                       onClick={() => triggerAction(container, 'stop')}
                       disabled={container.status !== 'running'}
-                      className="py-2 px-1 flex flex-col items-center justify-center gap-1 rounded-lg text-[9px] font-bold uppercase tracking-wider text-rose-400 bg-rose-500/5 hover:bg-rose-500/15 cursor-pointer transition-colors border border-transparent hover:border-rose-500/20 disabled:opacity-30 disabled:pointer-events-none"
+                      className="py-2 px-1 flex flex-col items-center justify-center gap-1 rounded-lg text-[9px] font-bold uppercase tracking-wider text-rose-450 bg-rose-500/5 hover:bg-rose-500/15 cursor-pointer transition-colors border border-transparent hover:border-rose-500/20 disabled:opacity-30 disabled:pointer-events-none"
                       title="Shut Down Container Process"
                     >
                       <Square className="h-3.5 w-3.5" />
@@ -285,7 +296,7 @@ export default function Containers() {
                     <button 
                       onClick={() => triggerAction(container, 'restart')}
                       disabled={container.status !== 'running'}
-                      className="py-2 px-1 flex flex-col items-center justify-center gap-1 rounded-lg text-[9px] font-bold uppercase tracking-wider text-violet-400 bg-violet-500/5 hover:bg-violet-500/15 cursor-pointer transition-colors border border-transparent hover:border-violet-500/20 disabled:opacity-30 disabled:pointer-events-none"
+                      className="py-2 px-1 flex flex-col items-center justify-center gap-1 rounded-lg text-[9px] font-bold uppercase tracking-wider text-violet-450 bg-violet-500/5 hover:bg-violet-500/15 cursor-pointer transition-colors border border-transparent hover:border-violet-500/20 disabled:opacity-30 disabled:pointer-events-none"
                       title="Perform Restart Loop"
                     >
                       <RefreshCw className="h-3.5 w-3.5" />
@@ -311,8 +322,8 @@ export default function Containers() {
           })}
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center min-h-[40vh] border border-slate-800/80 rounded-xl bg-slate-900/10 p-6 text-center">
-          <Search className="h-8 w-8 text-slate-600 mb-2" />
+        <div className="flex flex-col items-center justify-center min-h-[40vh] border border-slate-800/80 rounded-xl bg-[#0f172a]/10 p-6 text-center">
+          <Search className="h-8 w-8 text-slate-650 mb-2" />
           <h3 className="font-semibold text-sm">No containers found</h3>
           <p className="text-xs text-slate-500 mt-1">Try clearing filters or check another search term.</p>
         </div>
@@ -327,7 +338,7 @@ export default function Containers() {
               <h3 className="font-bold text-base">Confirm Dangerous Action</h3>
             </div>
             
-            <p className="text-sm text-slate-350 leading-relaxed">
+            <p className="text-sm text-slate-300 leading-relaxed">
               Are you sure you want to trigger a **{confirmDialog.attackType.toUpperCase()}** failure injection against container **{confirmDialog.containerName}**? 
               This will disrupt running services.
             </p>
@@ -335,7 +346,7 @@ export default function Containers() {
             <div className="flex items-center justify-end gap-3 mt-4">
               <button
                 onClick={() => setConfirmDialog(null)}
-                className="px-4 py-2 border border-slate-800 text-slate-400 rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-slate-800/50 cursor-pointer"
+                className="px-4 py-2 border border-slate-800 text-slate-400 rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-slate-800/50 cursor-pointer animate-pulse-status"
               >
                 Cancel
               </button>

@@ -10,7 +10,10 @@ import {
   Calendar,
   AlertOctagon,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  ShieldCheck,
+  Undo2,
+  ListFilter
 } from 'lucide-react';
 
 export default function Experiments() {
@@ -30,7 +33,7 @@ export default function Experiments() {
   const { data: response, isLoading } = useQuery({
     queryKey: ['experimentsList'],
     queryFn: () => api.getExperiments(),
-    refetchInterval: 3000,
+    refetchInterval: 5000,
   });
 
   // Mutations
@@ -43,7 +46,7 @@ export default function Experiments() {
       }
     },
     onError: (err: any) => {
-      alert(`Failed to delete experiment: ${err.message}`);
+      alert(`Failed to delete record: ${err.message}`);
     }
   });
 
@@ -83,7 +86,7 @@ export default function Experiments() {
       case 'recovered':
         return 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
       case 'running':
-        return 'bg-amber-500/10 text-amber-400 border border-amber-500/20 animate-pulse-status';
+        return 'bg-amber-500/10 text-amber-400 border border-amber-500/20 animate-pulse';
       case 'pending':
         return 'bg-violet-500/10 text-violet-400 border border-violet-500/20';
       case 'failed':
@@ -91,6 +94,17 @@ export default function Experiments() {
       default:
         return 'bg-slate-500/10 text-slate-400 border border-slate-500/20';
     }
+  };
+
+  const getSeverityBadge = (attackType: string) => {
+    const type = attackType.toLowerCase();
+    if (type === 'kill' || type === 'stop') {
+      return 'bg-rose-500/10 text-rose-450 border border-rose-500/20 font-bold';
+    }
+    if (type === 'restart') {
+      return 'bg-amber-500/10 text-amber-450 border border-amber-500/20 font-bold';
+    }
+    return 'bg-sky-500/10 text-sky-455 border border-sky-500/20 font-bold';
   };
 
   const formatTime = (timeStr: string) => {
@@ -161,14 +175,15 @@ export default function Experiments() {
         </div>
 
         {/* Paginated Table container */}
-        <div className="border border-slate-850 rounded-xl overflow-hidden bg-slate-900/5">
+        <div className="border border-slate-850 rounded-xl overflow-hidden bg-slate-900/5 shadow-md">
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left text-slate-400">
-              <thead className="text-xs uppercase bg-[#0f172a]/50 text-slate-400 border-b border-slate-800">
+              <thead className="text-[10px] uppercase bg-[#0c101b]/80 text-slate-450 border-b border-slate-800 tracking-wider font-bold">
                 <tr>
                   <th className="px-6 py-4">Target Container</th>
-                  <th className="px-6 py-4">Attack</th>
+                  <th className="px-6 py-4">Attack type</th>
                   <th className="px-6 py-4">Status</th>
+                  <th className="px-6 py-4">Severity</th>
                   <th className="px-6 py-4">Duration</th>
                   <th className="px-6 py-4">Started At</th>
                   <th className="px-6 py-4 text-right">Actions</th>
@@ -181,7 +196,7 @@ export default function Experiments() {
                       key={exp.id}
                       onClick={() => setSelectedExperiment(exp)}
                       className={`hover:bg-[#0f172a]/20 transition-colors cursor-pointer ${
-                        selectedExperiment?.id === exp.id ? 'bg-[#0f172a]/35' : ''
+                        selectedExperiment?.id === exp.id ? 'bg-[#0f172a]/35 border-l-2 border-violet-500' : ''
                       }`}
                     >
                       <td className="px-6 py-4 font-semibold text-gray-200">
@@ -197,6 +212,11 @@ export default function Experiments() {
                           {exp.status}
                         </span>
                       </td>
+                      <td className="px-6 py-4">
+                        <span className={`px-2 py-0.5 rounded text-[9px] uppercase ${getSeverityBadge(exp.attack_type)}`}>
+                          {exp.attack_type === 'kill' || exp.attack_type === 'stop' ? 'Critical' : exp.attack_type === 'restart' ? 'High' : 'Medium'}
+                        </span>
+                      </td>
                       <td className="px-6 py-4 font-mono text-xs text-gray-300">
                         {exp.duration}s
                       </td>
@@ -207,7 +227,7 @@ export default function Experiments() {
                         <div className="flex justify-end gap-2">
                           <button
                             onClick={() => setSelectedExperiment(exp)}
-                            className="p-1.5 rounded-lg border border-slate-800 text-slate-400 hover:text-violet-400 cursor-pointer"
+                            className="p-1.5 rounded-lg border border-slate-800 text-slate-450 hover:text-violet-400 cursor-pointer"
                             title="View Parameters"
                           >
                             <Info className="h-4 w-4" />
@@ -218,7 +238,7 @@ export default function Experiments() {
                                 deleteExperiment.mutate(exp.id);
                               }
                             }}
-                            className="p-1.5 rounded-lg border border-slate-800 text-slate-400 hover:text-rose-400 cursor-pointer"
+                            className="p-1.5 rounded-lg border border-slate-800 text-slate-450 hover:text-rose-455 cursor-pointer"
                             title="Delete History Record"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -229,8 +249,8 @@ export default function Experiments() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={6} className="px-6 py-12 text-center text-slate-500">
-                      No matching chaos logs found in DB.
+                    <td colSpan={7} className="px-6 py-12 text-center text-slate-500 uppercase tracking-widest text-[10px] font-bold">
+                      No experiments have run yet.
                     </td>
                   </tr>
                 )}
@@ -240,8 +260,8 @@ export default function Experiments() {
 
           {/* Table pagination stats footer */}
           {totalPages > 1 && (
-            <div className="px-6 py-4 flex items-center justify-between border-t border-slate-800 bg-[#0f172a]/20">
-              <span className="text-xs text-slate-500 font-semibold uppercase tracking-wider">
+            <div className="px-6 py-4 flex items-center justify-between border-t border-slate-800 bg-[#0c101b]/40 select-none">
+              <span className="text-[10px] text-slate-550 font-bold uppercase tracking-widest">
                 Page {currentPage} of {totalPages}
               </span>
               <div className="flex gap-2">
@@ -268,12 +288,12 @@ export default function Experiments() {
 
       {/* Details Slide Drawer overlay inside table layout */}
       {selectedExperiment && (
-        <div className="w-full lg:w-96 p-6 rounded-xl border border-slate-800 bg-[#0f172a]/80 backdrop-blur-md shadow-2xl flex flex-col gap-4 animate-in slide-in-from-right-10 duration-200">
+        <div className="w-full lg:w-96 p-6 rounded-xl border border-slate-800 bg-[#0f172a]/95 backdrop-blur-md shadow-2xl flex flex-col gap-4 animate-in slide-in-from-right-10 duration-200">
           <div className="flex justify-between items-start">
-            <h3 className="font-bold text-base text-gray-200 uppercase tracking-wide">Disruption Details</h3>
+            <h3 className="font-bold text-xs uppercase tracking-widest text-slate-400">Disruption Inspector</h3>
             <button 
               onClick={() => setSelectedExperiment(null)}
-              className="p-1 rounded-full border border-slate-800 text-slate-400 hover:text-white"
+              className="p-1 rounded-full border border-slate-800 text-slate-450 hover:text-white cursor-pointer"
             >
               <X className="h-4 w-4" />
             </button>
@@ -282,29 +302,29 @@ export default function Experiments() {
           <div className="space-y-4 text-xs text-slate-400">
             
             <div className="border-b border-slate-800/80 pb-2">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Disruption ID</span>
+              <span className="text-[9px] font-bold text-slate-550 uppercase tracking-widest">Disruption ID</span>
               <p className="font-mono mt-1 text-gray-300 break-all">{selectedExperiment.id}</p>
             </div>
 
             <div className="border-b border-slate-800/80 pb-2">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Target Container</span>
+              <span className="text-[9px] font-bold text-slate-550 uppercase tracking-widest">Target Container Node</span>
               <p className="font-bold text-sm text-gray-300 mt-1">{selectedExperiment.container_name || '-'}</p>
-              <p className="font-mono text-[9px] text-slate-500 break-all">{selectedExperiment.target_container_id}</p>
+              <p className="font-mono text-[9px] text-slate-550 break-all mt-0.5">{selectedExperiment.target_container_id}</p>
             </div>
 
             <div className="grid grid-cols-2 gap-2 border-b border-slate-800/80 pb-2">
               <div>
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Attack Type</span>
+                <span className="text-[9px] font-bold text-slate-550 uppercase tracking-widest">Attack Type</span>
                 <p className="font-mono font-bold mt-1 text-violet-400 uppercase">{selectedExperiment.attack_type}</p>
               </div>
               <div>
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Duration</span>
+                <span className="text-[9px] font-bold text-slate-550 uppercase tracking-widest">Disruption Duration</span>
                 <p className="font-bold text-sm text-gray-300 mt-1">{selectedExperiment.duration} seconds</p>
               </div>
             </div>
 
             <div className="border-b border-slate-800/80 pb-2">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Execution status</span>
+              <span className="text-[9px] font-bold text-slate-550 uppercase tracking-widest">Resilience State</span>
               <div className="mt-1">
                 <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${getStatusBadge(selectedExperiment.status)}`}>
                   {selectedExperiment.status}
@@ -313,7 +333,7 @@ export default function Experiments() {
             </div>
 
             <div className="border-b border-slate-800/80 pb-2">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1">
+              <span className="text-[9px] font-bold text-slate-550 uppercase tracking-widest flex items-center gap-1">
                 <Calendar className="h-3 w-3" /> Timing Logs
               </span>
               <div className="mt-2 space-y-1 bg-slate-950/20 p-2 rounded">
@@ -322,17 +342,27 @@ export default function Experiments() {
               </div>
             </div>
 
+            {selectedExperiment.status === 'recovered' && (
+              <div className="border border-emerald-950 bg-emerald-950/15 p-3 rounded-lg text-emerald-450 flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4" />
+                <div className="flex flex-col">
+                  <span className="uppercase text-[9px] font-bold">Auto-Recovery SLA Active</span>
+                  <span className="text-[10px] text-slate-400 mt-0.5">Container automatically self-healed by ChaosGuard Scheduler.</span>
+                </div>
+              </div>
+            )}
+
             {selectedExperiment.error_message && (
               <div className="border border-rose-950/40 bg-rose-950/5 p-3 rounded-lg text-rose-400">
                 <span className="uppercase text-[9px] font-bold flex items-center gap-1">
-                  <AlertOctagon className="h-3.5 w-3.5" /> Disruption Error
+                  <AlertOctagon className="h-3.5 w-3.5" /> Disruption Failure Error
                 </span>
                 <p className="mt-1 text-xs text-rose-350/80 leading-relaxed font-mono">{selectedExperiment.error_message}</p>
               </div>
             )}
 
             <div className="border-b border-slate-800/80 pb-2">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Injected Parameters</span>
+              <span className="text-[9px] font-bold text-slate-555 uppercase tracking-widest">Injected Parameters</span>
               <pre className="font-mono text-[10px] bg-[#0c1222] p-3 rounded-lg border border-slate-800 text-gray-300 mt-1 overflow-x-auto">
                 {JSON.stringify(JSON.parse(selectedExperiment.parameters || '{}'), null, 2)}
               </pre>
